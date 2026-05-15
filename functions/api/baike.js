@@ -9,18 +9,35 @@ export async function onRequestGet(context) {
     });
   }
 
-  const baikeUrl = `https://baike.baidu.com/api/openapi/BaikeLemmaCardApi?scope=103&format=json&appid=379020&bk_key=${encodeURIComponent(keyword)}&bk_length=300`;
-
   try {
+    // 直接请求百度百科词条页面
+    const baikeUrl = `https://baike.baidu.com/item/${encodeURIComponent(keyword)}`;
     const res = await fetch(baikeUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
     });
-    const data = await res.json();
+
+    const html = await res.text();
+
+    // 提取meta description作为摘要
+    let abstract = null;
+    const metaMatch = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
+    if (metaMatch) {
+      abstract = metaMatch[1].trim();
+    }
+
+    // 提取标题
+    let title = null;
+    const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+    if (titleMatch) {
+      title = titleMatch[1].replace(/_百度百科$/, '').replace(/（.*?）/, '').trim();
+    }
 
     return new Response(JSON.stringify({
-      title: data.title || null,
-      abstract: data.abstract || null,
-      url: data.url || null
+      title,
+      abstract,
+      url: baikeUrl
     }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
