@@ -10,34 +10,22 @@ export async function onRequestGet(context) {
   }
 
   try {
-    // 直接请求百度百科词条页面
     const baikeUrl = `https://baike.baidu.com/item/${encodeURIComponent(keyword)}`;
     const res = await fetch(baikeUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+      },
+      redirect: 'follow'
     });
 
     const html = await res.text();
 
-    // 提取meta description作为摘要
-    let abstract = null;
-    const metaMatch = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
-    if (metaMatch) {
-      abstract = metaMatch[1].trim();
-    }
-
-    // 提取标题
-    let title = null;
-    const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-    if (titleMatch) {
-      title = titleMatch[1].replace(/_百度百科$/, '').replace(/（.*?）/, '').trim();
-    }
-
     return new Response(JSON.stringify({
-      title,
-      abstract,
-      url: baikeUrl
+      status: res.status,
+      length: html.length,
+      preview: html.substring(0, 1000)
     }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
